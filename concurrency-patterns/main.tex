@@ -1,0 +1,27 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{subfiles}
+\usepackage[utf8]{inputenc}
+
+\usepackage{color}
+\usepackage{listings}
+\lstset{language=Go,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{blue}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  commentstyle=\color{green}\ttfamily}
+
+\title{Golang - concurrency patterns}
+\author{Leonardo Gonfiantini}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduzione}
+I concurrency patterns possono aiutarci a scrivere programmi concorrenti, ogni pattern utilizza la concorrenza e i canali in modo diverso, una buona conoscenza di essi ci permette di scrivere codice piu pulito e in modo piu efficente.
+
+\subfile{sections/runner}
+
+\end{document}

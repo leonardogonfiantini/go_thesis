@@ -1,0 +1,54 @@
+\newpage
+\section{Utilities}
+\subsection{Select}
+In Go, lo statement \textbf{select}, ha diversi utilizzi, e' molto simile al classico switch statement ma il select viene utilizzato per la comunicazione tra canali e goroutine.
+
+\begin{lstlisting}
+func main() {
+	tick := time.Tick(100 * time.Millisecond) //crea un canale che inviera un segnale ogni 100ms
+	boom := time.After(500 * time.Millisecond)
+	for {
+		select {
+		case <-tick:    //nel caso ricevessi risposta dal canale tick
+			fmt.Println("tick.")
+		case <-boom:    //nel caso ricevessi risposta dal canale boom
+			fmt.Println("BOOM!")
+			return
+		default:        //se non ricevo segnale dai due canali
+			fmt.Println("    .")
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+}
+\end{lstlisting}
+
+\subsection{Defer}
+In Go lo statement \textbf{defer}, ritarda l'esecuzione di una funzione fino a che la funzione ch e l'ha chiamata non ha finito. In altre parole usando defer calcoliamo gia la funzione ma non la finalizziamo.
+
+\begin{lstlisting}
+func mul(a1, a2 int) int {
+    res := a1 * a2
+    fmt.Println("Result: ", res)
+    return 0
+}
+ 
+func show() {
+    fmt.Println("Hello")
+}
+ 
+func main() {
+    mul(23, 45)
+    defer mul(23, 56)
+    show()
+}
+
+/*
+l'output che otteniamo sara:
+Result:  1035
+Hello
+Result:  1288
+*/
+\end{lstlisting}
+
+
+

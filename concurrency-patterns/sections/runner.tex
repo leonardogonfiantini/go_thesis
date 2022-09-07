@@ -1,0 +1,118 @@
+\section{Runner}
+
+Il pattern Runner ha lo scopo di far vedere come i canali possono essere utilizzati per monitorare il tempo impiegato dal programma per terminare, se dura troppo viene terminato. \newline
+E' utile in fase di sviluppo di un programma che deve essere schedulato ed eseguito in background. Puo essere per esempio un cronjob oppure un worker in un ambiente cloud.
+
+\begin{lstlisting}
+paackage runner
+
+import (
+    "errors"
+    "os"
+    "os/signal"
+    "time"
+)
+
+
+type Runner struct {
+
+    //canale che ci segnala interrupt dal sistema operativo
+    interrupt chan os.Signal
+    
+    //canale per gli errori
+    complete chan error
+    
+    //canale che ci segnala quando il tempo e' finito
+    timeout <-chan time.Time
+    
+    //array che contiene le task da eseguire
+    tasks []func(int)
+}
+\end{lstlisting}
+
+Abbiamo dichiarato la struttura Runner, abbiamo tre canali che ci aiutano a gestire la vita del programma e un array che contiene le task da eseguire. \newline
+Passiamo a definire gli errori:
+
+\begin{lstlisting}
+//quando un evento di timeout
+var ErrTimeout = errors.New("received timeout")
+
+//quando un evento OS
+var ErrInterrupt = errors.New("receiver interrupt")
+\end{lstlisting}
+
+Ora dobbiamo creare il metodo per instanziare un nuovo Runner. 
+
+\begin{lstlisting}
+func New(d time.Duration) *Runner {
+    return &Runner {
+        interrupt: make(chan 0s.Signal, 1),
+        complete: make(chan error),
+        timeout: time.After(d),
+    }
+}
+\end{lstlisting}
+
+Con questa funzione creiamo un nuovo oggetto Runner con timeout = d, il campo delle task non e' esplicitamente initizializzando, in quando il valore 0 equivale a nil per gli array. \newline
+Ora creiamo il metodo pre aggiungere le task al runner:
+
+\begin{lstlisting}
+func (r* Runner) Add(tasks ...func(int)) {
+    r.tasks = append(r.taks tasks...)
+}
+\end{lstlisting}
+
+In questo modo riusciamo ad aggiungere le tasks all'array. Per eseguire invece:
+
+\begin{lstlisting}
+func (r *Runner) run() error {
+    for id, task := range r.tasks {
+        if r.gotInterrupt() {
+            return ErrInterrupt
+        }
+        
+        task(id)
+    }
+    
+    return nil
+}
+\end{lstlisting}
+
+Con il metodo run(), iteriamo l'array tasks ed eseguiamo le funzioni in ordine. Prima che ogni funzione venga eseguita controlliamo il metodo gotInterrupt() per vedere se ci sono eventi dal sistema operativo.
+
+\begin{lstlisting}
+func (r *Runner) gotInterrupt() bool {
+
+    select {
+    case <- r.interrupt:
+       signal.Stop(r.interrupt)
+        return true
+    default:
+        return false
+    }
+}
+\end{lstlisting}
+
+Il metodo gotInterrupt() mostra un uso classico dello statement \textbf{select} con l'utilizzo di un default. Il codice aspetta di ricevere un interrupt dal canale, se non riceve nulla ritorna false e possiamo proseguire. \newline 
+A questo punto e' necessario un metodo per iniziare tutti i runnable:
+
+\begin{lstlisting}
+func (r *Runner) Start() error {
+    //tutti i segnali dell'OS finiranno nel canale
+    signal.Notify(r.interrupt, os.Interrupt)
+    
+    go func() {
+        r.complete <- r.run()
+    }()
+    
+    select {
+    case err := <- r.complete:
+        return err
+    
+    case <-r.timeout:
+            return ErrTimeout
+    }
+}
+\end{lstlisting}
+
+Il metodo start() prima di tutto imposta il canale r.interrupt in grado di ricevere gli interrupt dell'OS. Crea la routine per eseguire la task, se un errore arriva a r.complete allora ritorneremo l'errore, altrimenti se il canale r.timeout finisce prima ritornera un errore di tempo.
